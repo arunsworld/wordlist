@@ -2,3 +2,7 @@ db.db
 Untitled.ipynb
 quiz_test.go
 .ipynb_checkpoints
+cmd/wordlist/db.db
+cmd/utility/db.db
+cmd/utility/words.txt
+cmd/utility/gcloud.sh

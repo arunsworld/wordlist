@@ -1,4 +1,4 @@
-package main
+package wordlist
 
 import (
 	"encoding/json"
@@ -8,12 +8,12 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/arunsworld/website/pkg/website"
+	"github.com/arunsworld/wordlist/pkg/website"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
-func setupQuiz(ws *website.Website) {
+func SetupQuiz(ws *website.Website) {
 	if err := ws.DB().AutoMigrate(&OngoingQuiz{}); err != nil {
 		panic(err)
 	}
@@ -27,7 +27,7 @@ func setupQuiz(ws *website.Website) {
 		panic(err)
 	}
 
-	quizHTML, err := webContent.ReadFile("web/html/quiz.html")
+	quizHTML, err := ws.WebsiteContent().ReadFile("web/html/quiz.html")
 	if err != nil {
 		panic(err)
 	}

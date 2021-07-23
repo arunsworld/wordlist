@@ -1,4 +1,4 @@
-package main
+package wordlist
 
 import (
 	"encoding/json"
@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/arunsworld/website/pkg/website"
+	"github.com/arunsworld/wordlist/pkg/website"
 	"gorm.io/gorm"
 )
 
@@ -17,12 +17,12 @@ type Word struct {
 	Meaning string
 }
 
-func (w *Word) exists(db *gorm.DB) bool {
+func (w *Word) Exists(db *gorm.DB) bool {
 	result := db.Where("word = ?", w.Word).First(&Word{})
 	return result.RowsAffected > 0
 }
 
-func (w *Word) create(db *gorm.DB) error {
+func (w *Word) Create(db *gorm.DB) error {
 	result := db.Create(w)
 	if result.Error != nil {
 		return result.Error
@@ -30,12 +30,12 @@ func (w *Word) create(db *gorm.DB) error {
 	return nil
 }
 
-func setupWordlist(ws *website.Website) {
+func SetupWordlist(ws *website.Website) {
 	if err := ws.DB().AutoMigrate(&Word{}); err != nil {
 		panic(err)
 	}
 
-	wordlistHTML, err := webContent.ReadFile("web/html/words.html")
+	wordlistHTML, err := ws.WebsiteContent().ReadFile("web/html/words.html")
 	if err != nil {
 		panic(err)
 	}
@@ -65,11 +65,11 @@ func setupWordlist(ws *website.Website) {
 			Word:    word,
 			Meaning: meaning,
 		}
-		if wrd.exists(ws.DB()) {
+		if wrd.Exists(ws.DB()) {
 			http.Error(w, "word already exists", http.StatusBadRequest)
 			return
 		}
-		if err := wrd.create(ws.DB()); err != nil {
+		if err := wrd.Create(ws.DB()); err != nil {
 			log.Printf("error creating word: %v", err)
 			http.Error(w, "Could not create word", http.StatusInternalServerError)
 			return

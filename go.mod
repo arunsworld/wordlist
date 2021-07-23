@@ -1,4 +1,4 @@
-module github.com/arunsworld/website
+module github.com/arunsworld/wordlist
 
 go 1.16
 

@@ -22,12 +22,13 @@ import (
 //go:embed web/*
 var websiteContent embed.FS
 
-func NewWebsite(dbName, appName string) *Website {
+func NewWebsite(dbName, appName string, content embed.FS) *Website {
 	result := &Website{
-		r:             mux.NewRouter(),
-		cookieName:    fmt.Sprintf("%s_session", appName),
-		appName:       appName,
-		cookieTimeout: time.Minute * 5,
+		r:              mux.NewRouter(),
+		cookieName:     fmt.Sprintf("%s_session", appName),
+		appName:        appName,
+		cookieTimeout:  time.Minute * 5,
+		websiteContent: content,
 	}
 	result.addLoggingMiddleware()
 	if dbName != "" {
@@ -46,12 +47,13 @@ func NewWebsite(dbName, appName string) *Website {
 }
 
 type Website struct {
-	r             *mux.Router
-	gdb           *gorm.DB
-	db            *sql.DB
-	appName       string
-	cookieName    string
-	cookieTimeout time.Duration
+	r              *mux.Router
+	gdb            *gorm.DB
+	db             *sql.DB
+	appName        string
+	cookieName     string
+	cookieTimeout  time.Duration
+	websiteContent embed.FS
 }
 
 func (ws *Website) Router() *mux.Router {
@@ -60,6 +62,10 @@ func (ws *Website) Router() *mux.Router {
 
 func (ws *Website) DB() *gorm.DB {
 	return ws.gdb
+}
+
+func (ws *Website) WebsiteContent() embed.FS {
+	return ws.websiteContent
 }
 
 func (ws *Website) EnableStatic() {

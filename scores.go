@@ -1,15 +1,15 @@
-package main
+package wordlist
 
 import (
 	"encoding/json"
 	"log"
 	"net/http"
 
-	"github.com/arunsworld/website/pkg/website"
+	"github.com/arunsworld/wordlist/pkg/website"
 )
 
-func setupScores(ws *website.Website) {
-	scoresHTML, err := webContent.ReadFile("web/html/scores.html")
+func SetupScores(ws *website.Website) {
+	scoresHTML, err := ws.WebsiteContent().ReadFile("web/html/scores.html")
 	if err != nil {
 		panic(err)
 	}

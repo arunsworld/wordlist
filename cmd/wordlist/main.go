@@ -6,7 +6,8 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/arunsworld/website/pkg/website"
+	"github.com/arunsworld/wordlist"
+	"github.com/arunsworld/wordlist/pkg/website"
 )
 
 //go:embed web/*
@@ -17,7 +18,7 @@ func main() {
 	db := flag.String("db", "db.db", "location of db")
 	flag.Parse()
 
-	ws := website.NewWebsite(*db, "wordlist")
+	ws := website.NewWebsite(*db, "wordlist", webContent)
 	defer ws.Close()
 
 	ws.EnableStatic()
@@ -27,9 +28,9 @@ func main() {
 	}
 
 	setupHome(ws)
-	setupWordlist(ws)
-	setupQuiz(ws)
-	setupScores(ws)
+	wordlist.SetupWordlist(ws)
+	wordlist.SetupQuiz(ws)
+	wordlist.SetupScores(ws)
 
 	if err := ws.Serve(*port); err != nil {
 		ws.Close()
