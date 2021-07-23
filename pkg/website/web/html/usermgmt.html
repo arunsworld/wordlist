@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap CSS -->
+    <link href="/static/bootstrap.min.css" rel="stylesheet">
+
+    <title>User Mgmt.</title>
+    <style>
+        .main {
+            margin-top: 20px;
+        }
+        [v-cloak] {
+            display: none;
+        }
+    </style>
+  </head>
+  <body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container-fluid">
+          <a class="navbar-brand" href="/usermgmt/">User Mgmt.</a>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+          <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+              <li class="nav-item">
+                <a class="nav-link active" aria-current="page" href="/">Home</a>
+              </li>
+            </ul>
+            <ul class="navbar-nav mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <a class="nav-link" href="/logout/">Logout</a>
+                  </li>
+            </ul>
+          </div>
+        </div>
+      </nav>
+      
+    <div class="container main" id="app">
+        <table class="table">
+            <thead>
+              <tr>
+                <th scope="col">#</th>
+                <th scope="col">Username</th>
+                <th scope="col">Password</th>
+                <th scope="col">Actions</th>
+              </tr>
+            </thead>
+            <tbody v-cloak>
+              <tr>
+                  <th></th>
+                  <td>
+                    <input v-model="newusername" type="email" class="form-control">
+                  </td>
+                  <td>
+                    <input v-model="newuserpwd" type="password" class="form-control">
+                  </td>
+                  <td>
+                    <button type="button" class="btn btn-success" v-on:click="create">Create</button>
+                  </td>
+              </tr>
+              <tr v-for="user in users">
+                <th scope="row">{{user.ID}}</th>
+                <td>{{user.Username}}</td>
+                <td>
+                    <input v-model="user.Password" type="password" class="form-control">
+                </td>
+                <td>
+                    <button type="button" class="btn btn-success" v-on:click="save" v-bind:uid="user.ID">Save</button>
+                    <button type="button" class="btn btn-danger" v-on:click="del" v-bind:uid="user.ID" v-if="user.Username!='admin'">Delete</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+    </div>
+
+    <script src="/static/bootstrap.bundle.min.js"></script>
+    <script src="/static/jquery-3.6.0.min.js"></script>
+    <script src="/static/vue.min.js"></script>
+
+    <script>
+        var app = new Vue({
+            el: '#app',
+            data: {
+                users: [],
+                newusername:"",
+                newuserpwd:"",
+            },
+            methods: {
+                save: function(event) {
+                    if (event.target.attributes.uid) {
+                        var userID = event.target.attributes.uid.value;
+                        for (i=0;i<this.users.length;i++){
+                            if (this.users[i].ID==userID) {
+                                var pwd = this.users[i].Password;
+                                if (pwd && pwd!="") {
+                                    $.post( "/usermgmt/users/save/" , {uid: userID, pwd: pwd})
+                                        .done(function( data ) {
+                                            alert("saved successfully")
+                                        })
+                                        .fail(function(xhr, status, error) {
+                                            alert('failed to save '+ xhr.responseText);
+                                        });
+                                } else {
+                                    alert("password is empty");
+                                }
+                            }
+                        }
+                    } else {
+                        alert("couldn't find user ID");
+                    }
+                    event.preventDefault();
+                },
+                del: function(event){
+                    if (event.target.attributes.uid) {
+                        var userID = event.target.attributes.uid.value;
+                        $.post( "/usermgmt/users/delete/" , {uid: userID})
+                            .done(function( data ) {
+                                alert("deleted successfully");
+                                loadUsers();
+                            })
+                            .fail(function(xhr, status, error) {
+                                alert('failed to delete: '+ xhr.responseText);
+                            });
+                    } else {
+                        alert("couldn't find user ID");
+                    }
+                    event.preventDefault();
+                },
+                create: function(event){
+                    event.preventDefault();
+                    if (this.newusername==""){
+                        alert("username cannot be empty");
+                        return
+                    }
+                    if (this.newuserpwd==""){
+                        alert("password cannot be empty");
+                        return
+                    }
+                    $.post( "/usermgmt/users/create/" , {username: this.newusername, password: this.newuserpwd})
+                        .done(function( data ) {
+                            alert("saved successfully...");
+                            app.newusername="";
+                            app.newuserpwd="";
+                            loadUsers();
+                        })
+                        .fail(function(xhr, status, error) {
+                            alert("failed to save: "+xhr.responseText);
+                        });
+                },
+            },
+        })
+        $( document ).ready(function() {
+            loadUsers();
+        });
+        function loadUsers(){
+            $.get("/usermgmt/users/")
+                .done(function( data ) {
+                    var users = JSON.parse(data);
+                    app.users=users;
+                    // $('#loadingtopics').hide();
+                })
+                .fail(function(xhr, status, error) {
+                    alert(error);
+                    // $('#topic_err').show();
+                    // $('#loadingtopics').hide();
+                });
+        }
+    </script>
+
+  </body>
+</html>

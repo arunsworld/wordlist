@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <link rel="stylesheet" href="/static/bootstrap.min.css">
+  <title>Quiz</title>
+  <style>
+    .main {
+      height: 60vh;
+    }
+
+    [v-cloak] {
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+  <nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="/quiz/">Quiz</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
+        aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          <li class="nav-item">
+            <a class="nav-link active" aria-current="page" href="/">Home</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" aria-current="page" href="/scores/">Scores</a>
+          </li>
+        </ul>
+        <ul class="navbar-nav mb-2 mb-lg-0">
+          <li class="nav-item">
+            <a class="nav-link" href="/logout/">Logout</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container" id="app">
+    <div class="row main justify-content-center">
+      <div class="row justify-content-center align-items-center">
+        <div class="col-md-6 col-lg-4">
+          <div class="card" v-cloak v-if="loading">
+            <div class="card-body">
+              <h5>Loading...</h5>
+            </div>
+          </div>
+          <div class="card" v-cloak v-if="!loading && hasFailed">
+            <div class="card-body">
+              <div class="alert alert-danger" role="alert">
+                Quiz could not be loaded: {{errorMsg}}
+              </div>
+            </div>
+          </div>
+          <div class="card" v-cloak v-if="!loading && !hasFailed && !quizdone">
+            <div class="card-body">
+              <span class="float-end">{{page}}</span>
+              <h5 class="card-title text-center">{{question.Word}}</h5>
+              <br />
+              <div class="form-check" v-for="choice in question.Choices">
+                <input class="form-check-input" type="radio" v-model="choice_picked" v-bind:value="choice">
+                <label class="form-check-label">
+                  {{choice}}
+                </label>
+              </div>
+              <button type="button" class="btn btn-success float-end" v-on:click="next">{{next_button}}</button>
+            </div>
+          </div>
+          <div class="alert alert-success" role="alert" v-cloak v-if="!loading && !hasFailed && quizdone && results.length==0">
+            Congratulations! You got all correct!
+          </div>
+          <div v-cloak v-if="!loading && !hasFailed && quizdone && results.length>0">
+            <h5 class="text-center">{{score}}</h5>
+            <br />
+            <p>Words to review:</p>
+            <table class="table">
+              <thead>
+                <tr>
+                  <th scope="col">Word</th>
+                  <th scope="col">Meaning</th>
+                  <th scope="col">You Picked</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="result in results">
+                  <td>{{result.Word}}</td>
+                  <td>{{result.Meaning}}</td>
+                  <td>{{result.Chosen}}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>
+
+  <script src="/static/bootstrap.bundle.min.js"></script>
+  <script src="/static/jquery-3.6.0.min.js"></script>
+  <script src="/static/vue.min.js"></script>
+
+  <script>
+    var app = new Vue({
+      el: '#app',
+      data: {
+        quiz: {},
+        hasFailed: false,
+        errorMsg: "",
+        loading: true,
+        questionID: 0,
+        question: {},
+        choice_picked: "",
+        next_button: "Next",
+        answers: {},
+        quizdone: false,
+        results: [],
+      },
+      computed: {
+        "page":function(event){
+          return this.questionID+1 + " of " + this.quiz.Questions.length;
+        },
+        "score": function(event){
+          return "Score: " + (this.quiz.Questions.length - this.results.length) + " / " + this.quiz.Questions.length;
+        },
+      },
+      methods: {
+        "next": function (event) {
+          if (this.choice_picked=="") {
+            alert("please pick a choice first");
+            return
+          }
+          this.answers.Answers.push({Word: this.question.Word, Answer: this.choice_picked});
+          this.questionID++;
+          if (this.questionID==this.quiz.Questions.length) {
+            this.loading=true;
+            $.post("/quiz-api/save/",JSON.stringify(this.answers))
+              .done(function (data) {
+                app.results = JSON.parse(data);
+                app.loading=false;
+                app.quizdone=true;
+              })
+              .fail(function (xhr, status, error) {
+                app.loading=false;
+                app.hasFailed = true;
+                app.errorMsg = xhr.responseText;
+              });
+            return
+          }
+          if (this.questionID==this.quiz.Questions.length-1) {
+            this.next_button = "Done";
+          }
+          this.question = app.quiz.Questions[this.questionID];
+          this.choice_picked="";
+          event.preventDefault();
+        },
+      },
+    });
+    var loadQuiz = function () {
+      $.get("/quiz-api/new/", {})
+        .done(function (data) {
+          app.quiz = JSON.parse(data);
+          app.loading = false;
+          app.hasFailed = false;
+          app.questionID = 0;
+          app.question = app.quiz.Questions[0];
+          app.answers.Session = app.quiz.Session;
+          app.answers.Answers = [];
+        })
+        .fail(function (xhr, status, error) {
+          app.hasFailed = true;
+          app.errorMsg = xhr.responseText;
+          app.loading = false;
+        });
+    }
+    $(function () {
+      loadQuiz();
+    });
+  </script>
+
+</body>
+
+</html>

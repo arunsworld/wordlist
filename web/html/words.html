@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap CSS -->
+    <link href="/static/bootstrap.min.css" rel="stylesheet">
+
+    <title>Word List Mgmt.</title>
+    <style>
+        .main {
+            margin-top: 20px;
+        }
+        [v-cloak] {
+            display: none;
+        }
+    </style>
+  </head>
+  <body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container-fluid">
+          <a class="navbar-brand" href="/wordlist/">Word Lists</a>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+          <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+              <li class="nav-item">
+                <a class="nav-link active" aria-current="page" href="/">Home</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" aria-current="page" href="/quiz/">Quiz</a>
+              </li>
+            </ul>
+            <ul class="navbar-nav mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <a class="nav-link" href="/logout/">Logout</a>
+                  </li>
+            </ul>
+          </div>
+        </div>
+      </nav>
+      
+    <div class="container main" id="app">
+        <div v-cloak v-if="isLoading">
+            <h2 class="text-center" style="margin-top: 200px;">Loading...</h2>
+        </div>
+        <div v-if="hasError" v-cloak>
+            <div class="alert alert-danger" role="alert">
+                Words could not be loaded: {{errorMsg}}
+            </div>
+        </div>
+        <table class="table" v-cloak v-if="!isLoading && !hasError">
+            <thead>
+              <tr>
+                <th scope="col">Word</th>
+                <th scope="col">Meaning</th>
+                <th scope="col">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="word in words">
+                <td>{{word.Word}}</td>
+                <td>
+                    <input v-model="word.Meaning" class="form-control">
+                </td>
+                <td>
+                    <button type="button" class="btn btn-success" v-on:click="save" v-bind:wordid="word.ID">Save</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+    </div>
+
+    <script src="/static/bootstrap.bundle.min.js"></script>
+    <script src="/static/jquery-3.6.0.min.js"></script>
+    <script src="/static/vue.min.js"></script>
+
+    <script>
+        var app = new Vue({
+            el: '#app',
+            data: {
+                words: [],
+                isLoading: false,
+                hasError: false,
+                errorMsg: "",
+            },
+            methods: {
+                save: function(event) {
+                    if (event.target.attributes.wordid) {
+                        var wordID = event.target.attributes.wordid.value;
+                        for (i=0;i<this.words.length;i++){
+                            if (this.words[i].ID==wordID) {
+                                var meaning = this.words[i].Meaning;
+                                if (meaning && meaning!="") {
+                                    $.post( "/wordlist-api/save/" , {wid: wordID, meaning: meaning})
+                                        .done(function( data ) {
+                                            alert("saved successfully")
+                                        })
+                                        .fail(function(xhr, status, error) {
+                                            alert('failed to save '+ xhr.responseText);
+                                        });
+                                } else {
+                                    alert("meaning is empty");
+                                }
+                            }
+                        }
+                    } else {
+                        alert("couldn't find word ID");
+                    }
+                    event.preventDefault();
+                },
+            },
+        })
+        $( document ).ready(function() {
+            loadWords();
+        });
+        function loadWords(){
+            this.isLoading=true;
+            this.hasError=false;
+            this.errorMsg = "";
+            $.get("/wordlist-api/words/")
+                .done(function( data ) {
+                    var words = JSON.parse(data);
+                    app.words=words;
+                    app.isLoading=false;
+                })
+                .fail(function(xhr, status, error) {
+                    app.isLoading=false;
+                    app.hasError=true;
+                    app.errorMsg = xhr.responseText;
+                });
+        }
+    </script>
+
+  </body>
+</html>

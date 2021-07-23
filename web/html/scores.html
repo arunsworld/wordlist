@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap CSS -->
+    <link href="/static/bootstrap.min.css" rel="stylesheet">
+
+    <title>My Scores</title>
+    <style>
+        .main {
+            margin-top: 20px;
+        }
+        [v-cloak] {
+            display: none;
+        }
+    </style>
+  </head>
+  <body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container-fluid">
+          <a class="navbar-brand" href="/scores/">My Scores</a>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+          <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+              <li class="nav-item">
+                <a class="nav-link active" aria-current="page" href="/">Home</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" aria-current="page" href="/quiz/">Quiz</a>
+              </li>
+            </ul>
+            <ul class="navbar-nav mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <a class="nav-link" href="/logout/">Logout</a>
+                  </li>
+            </ul>
+          </div>
+        </div>
+      </nav>
+      
+    <div class="container main" id="app">
+        <div class="row justify-content-center align-items-center">
+        <div class="col-md-6 col-lg-4">
+            <div v-cloak v-if="isLoading">
+                <h2 class="text-center" style="margin-top: 200px;">Loading...</h2>
+            </div>
+            <div v-if="hasError" v-cloak>
+                <div class="alert alert-danger" role="alert">
+                    Words could not be loaded: {{errorMsg}}
+                </div>
+            </div>
+            <table class="table" v-cloak v-if="!isLoading && !hasError">
+                <thead>
+                  <tr>
+                    <th scope="col">Date Taken</th>
+                    <th scope="col">Score</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="score in scores">
+                    <td>{{score.TakenAt}}</td>
+                    <td>{{score.TotalQuestions-score.IncorrectQuestions}}/{{score.TotalQuestions}}</td>
+                  </tr>
+                </tbody>
+              </table>
+        </div>
+    </div>
+    </div>
+
+    <script src="/static/bootstrap.bundle.min.js"></script>
+    <script src="/static/jquery-3.6.0.min.js"></script>
+    <script src="/static/vue.min.js"></script>
+
+    <script>
+        var app = new Vue({
+            el: '#app',
+            data: {
+                scores: [],
+                isLoading: false,
+                hasError: false,
+                errorMsg: "",
+            },
+            methods: {},
+        })
+        $(document).ready(function() {
+            loadScores();
+        });
+        function loadScores(){
+            this.isLoading=true;
+            this.hasError=false;
+            this.errorMsg = "";
+            $.get("/scores-api/scores/")
+                .done(function( data ) {
+                    var scores = JSON.parse(data);
+                    app.scores=scores;
+                    app.isLoading=false;
+                })
+                .fail(function(xhr, status, error) {
+                    app.isLoading=false;
+                    app.hasError=true;
+                    app.errorMsg = xhr.responseText;
+                });
+        }
+    </script>
+
+  </body>
+</html>

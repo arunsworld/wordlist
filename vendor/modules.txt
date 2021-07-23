@@ -1,0 +1,34 @@
+# github.com/google/uuid v1.2.0
+## explicit
+github.com/google/uuid
+# github.com/gorilla/mux v1.8.0
+## explicit
+github.com/gorilla/mux
+# github.com/gorilla/securecookie v1.1.1
+## explicit
+github.com/gorilla/securecookie
+# github.com/jinzhu/inflection v1.0.0
+github.com/jinzhu/inflection
+# github.com/jinzhu/now v1.1.2
+github.com/jinzhu/now
+# github.com/mattn/go-sqlite3 v1.14.5
+github.com/mattn/go-sqlite3
+# github.com/unrolled/logger v0.0.0-20201216141554-31a3694fe979
+## explicit
+github.com/unrolled/logger
+# golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97
+## explicit
+golang.org/x/crypto/bcrypt
+golang.org/x/crypto/blowfish
+# gorm.io/driver/sqlite v1.1.4
+## explicit
+gorm.io/driver/sqlite
+# gorm.io/gorm v1.21.12
+## explicit
+gorm.io/gorm
+gorm.io/gorm/callbacks
+gorm.io/gorm/clause
+gorm.io/gorm/logger
+gorm.io/gorm/migrator
+gorm.io/gorm/schema
+gorm.io/gorm/utils

@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <link rel="stylesheet" href="/static/bootstrap.min.css">
+  <title>Word Lists</title>
+  <style>
+    .main {
+      height: 60vh;
+    }
+
+    [v-cloak] {
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+  <nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="/">Word Lists</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
+        aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          <li class="nav-item">
+            <a class="nav-link active" aria-current="page" href="/">Home</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" aria-current="page" href="/quiz/">Quiz</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" aria-current="page" href="/wordlist/">Words</a>
+          </li>
+        </ul>
+        <ul class="navbar-nav mb-2 mb-lg-0">
+          <li class="nav-item">
+            <a class="nav-link" href="/scores/">Scores</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/usermgmt/">Users</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/logout/">Logout</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container" id="app">
+    <div class="row main justify-content-center">
+      <div class="row justify-content-center align-items-center">
+        <div class="col-md-6 col-lg-4">
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title text-center">Add a new Word</h5>
+              <br />
+              <div class="mb-3 row">
+                <label class="col-sm-4 col-form-label text-sm-end">Word</label>
+                <div class="col-sm-8">
+                  <input class="form-control" v-model="word" id="word">
+                </div>
+              </div>
+              <div class="mb-3 row">
+                <label class="col-sm-4 col-form-label text-sm-end">Meaning</label>
+                <div class="col-sm-8">
+                  <input class="form-control" v-model="meaning">
+                </div>
+              </div>
+              <div class="mb-3 row" v-cloak v-if="hasFailed">
+                <div class="col-sm-12">
+                  <div class="alert alert-danger" role="alert">
+                    Failed to add word: {{errorMsg}}
+                  </div>
+                </div>
+              </div>
+              <div class="mb-3 row" v-cloak v-if="hasSucceeded">
+                <div class="col-sm-12">
+                  <div class="alert alert-success" role="alert">
+                    Word added successfully
+                  </div>
+                </div>
+              </div>
+              <div class="mb-3 row">
+                <div class="col-sm-8 offset-sm-4">
+                  <button type="button" class="btn btn-primary" v-on:click="save" :disabled="!valid">Save</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/bootstrap.bundle.min.js"></script>
+  <script src="/static/jquery-3.6.0.min.js"></script>
+  <script src="/static/vue.min.js"></script>
+
+  <script>
+    var app = new Vue({
+      el: '#app',
+      data: {
+        word: "",
+        meaning: "",
+        hasFailed: false,
+        errorMsg: "",
+        hasSucceeded: false,
+      },
+      computed: {
+        "valid": function () {
+          if (this.word != "" && this.meaning != "") {
+            return true;
+          } else {
+            return false;
+          }
+        },
+      },
+      methods: {
+        "save": function (event) {
+          if (!this.valid) {
+            alert("please enter word and meaning");
+            return
+          }
+          this.hasFailed = false;
+          this.errorMsg = "";
+          this.hasSucceeded = false;
+          $.post("/wordlist-open-api/add/", { word: this.word, meaning: this.meaning })
+            .done(function (data) {
+              // alert("word added successfully");
+              app.hasSucceeded = true;
+              app.word = "";
+              app.meaning = "";
+              $("#word").focus();
+            })
+            .fail(function (xhr, status, error) {
+              // alert('failed to add word: ' + xhr.responseText);
+              app.hasFailed = true;
+              app.errorMsg = xhr.responseText;
+            });
+          event.preventDefault();
+        },
+      },
+    });
+    $(function () {
+      $("#word").focus();
+    });
+  </script>
+
+</body>
+
+</html>
