@@ -74,7 +74,7 @@ func setupQuiz(ws *website.Website) {
 			http.Error(w, "error saving quiz results", http.StatusInternalServerError)
 			return
 		}
-		ia, err := proceessAnswers(ws.DB(), answers)
+		ia, err := processAnswers(ws.DB(), answers)
 		if err != nil {
 			log.Printf("error processing answers: %v", err)
 			http.Error(w, "error saving quiz results", http.StatusInternalServerError)
@@ -89,8 +89,6 @@ func setupQuiz(ws *website.Website) {
 	})
 
 }
-
-// func createQuiz(db *gorm.DB) Quiz {}
 
 func newQuizSession(db *gorm.DB) (quizSession, error) {
 	qs := quizSession{
@@ -173,7 +171,7 @@ func (qs quizSession) newQuiz(count int, user *website.User) (Quiz, error) {
 	return quiz, nil
 }
 
-func proceessAnswers(db *gorm.DB, answers Answers) (IncorrectAnswers, error) {
+func processAnswers(db *gorm.DB, answers Answers) (IncorrectAnswers, error) {
 	ongoingQuiz := &OngoingQuiz{}
 	result := db.Preload("OngoingQuizQuestions").First(&ongoingQuiz, "session = ?", answers.Session)
 	if result.Error != nil {

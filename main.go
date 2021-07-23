@@ -13,11 +13,11 @@ import (
 var webContent embed.FS
 
 func main() {
-	port := flag.Int("port", 6123, "port to start chat server on")
+	port := flag.Int("port", 6123, "port to start app server on")
 	db := flag.String("db", "db.db", "location of db")
 	flag.Parse()
 
-	ws := website.NewWebsite(*db, "mywebsite")
+	ws := website.NewWebsite(*db, "wordlist")
 	defer ws.Close()
 
 	ws.EnableStatic()
@@ -43,7 +43,6 @@ func setupHome(ws *website.Website) {
 		panic(err)
 	}
 	index := ws.Router().Path("/").Subrouter()
-	// index.Use(ws.EnsureAuthMiddleware(website.AuthMiddlewareConfig{}))
 	index.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
 		w.Write(data)

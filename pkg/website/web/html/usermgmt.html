@@ -162,12 +162,9 @@
                 .done(function( data ) {
                     var users = JSON.parse(data);
                     app.users=users;
-                    // $('#loadingtopics').hide();
                 })
                 .fail(function(xhr, status, error) {
-                    alert(error);
-                    // $('#topic_err').show();
-                    // $('#loadingtopics').hide();
+                    alert(xhr.responseText);
                 });
         }
     </script>
