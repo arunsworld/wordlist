@@ -1,15 +1,18 @@
 package wordlist
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
 	"math/rand"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/arunsworld/wordlist/pkg/website"
 	"github.com/google/uuid"
+	"github.com/gorilla/mux"
 	"gorm.io/gorm"
 )
 
@@ -32,11 +35,21 @@ func SetupQuiz(ws *website.Website) {
 		panic(err)
 	}
 
-	quiz := ws.Router().Path("/quiz/").Methods("GET").Subrouter()
+	quiz := ws.Router().PathPrefix("/quiz/").Methods("GET").Subrouter()
 	quiz.Use(ws.EnsureAuthMiddleware(website.AuthMiddlewareConfig{}))
-	quiz.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	quiz.HandleFunc("/{count_str}", func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		count, err := strconv.Atoi(vars["count_str"])
+		if err != nil {
+			log.Printf("error creating a new quiz: %v", err)
+			http.Error(w, "error creating new quiz", http.StatusInternalServerError)
+			return
+		}
+		if count > 50 {
+			count = 50
+		}
 		w.Header().Set("Content-Type", "text/html")
-		w.Write(quizHTML)
+		w.Write(bytes.ReplaceAll(quizHTML, []byte("[[COUNT]]"), []byte(strconv.Itoa(count))))
 	})
 
 	quizAPIGET := ws.Router().PathPrefix("/quiz-api/").Methods("GET").Subrouter()
@@ -45,14 +58,21 @@ func SetupQuiz(ws *website.Website) {
 	quizAPIPOST := ws.Router().PathPrefix("/quiz-api/").Methods("POST").Subrouter()
 	quizAPIPOST.Use(ws.EnsureAuthMiddleware(website.AuthMiddlewareConfig{IsForAPI: true}))
 
-	quizAPIGET.HandleFunc("/new/", func(w http.ResponseWriter, r *http.Request) {
+	quizAPIGET.HandleFunc("/new/{count_str}", func(w http.ResponseWriter, r *http.Request) {
 		qs, err := newQuizSession(ws.DB())
 		if err != nil {
 			log.Printf("error creating new quiz session: %v", err)
 			http.Error(w, "error creating new quiz", http.StatusInternalServerError)
 			return
 		}
-		quiz, err := qs.newQuiz(10, ws.AuthenticatedUser(r))
+		vars := mux.Vars(r)
+		count, err := strconv.Atoi(vars["count_str"])
+		if err != nil {
+			log.Printf("error creating new quiz session - unable to parse count: %v", err)
+			http.Error(w, "error creating new quiz", http.StatusInternalServerError)
+			return
+		}
+		quiz, err := qs.newQuiz(count, ws.AuthenticatedUser(r))
 		if err != nil {
 			log.Printf("error creating new quiz from session: %v", err)
 			http.Error(w, "error creating new quiz", http.StatusInternalServerError)

@@ -1,9 +1,9 @@
-TARGETS := .
+TARGETS := ./cmd/wordlist:./cmd/utility
 LD_FLAGS := -s -w
 
 build:
 	pack build arunsworld/words:latest \
-		 --default-process website \
+		 --default-process wordlist \
      	 --env "BP_GO_TARGETS=${TARGETS}" \
      	 --env "BP_GO_BUILD_LDFLAGS=${LD_FLAGS}" \
      	 --buildpack gcr.io/paketo-buildpacks/go \

@@ -40,7 +40,7 @@ func SetupWordlist(ws *website.Website) {
 		panic(err)
 	}
 
-	authorizedUsers := []string{"admin", "abarua", "nomi"}
+	authorizedUsers := []string{"admin", "abarua", "nomi", "aanya"}
 
 	wordlist := ws.Router().Path("/wordlist/").Methods("GET").Subrouter()
 	wordlist.Use(ws.EnsureAuthMiddleware(website.AuthMiddlewareConfig{UserNames: authorizedUsers}))

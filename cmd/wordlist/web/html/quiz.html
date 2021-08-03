@@ -11,6 +11,10 @@
       height: 60vh;
     }
 
+    .mistakes {
+      margin-top: 20px;
+    }
+
     [v-cloak] {
       display: none;
     }
@@ -20,7 +24,7 @@
 <body>
   <nav class="navbar navbar-expand-lg navbar-light bg-light">
     <div class="container-fluid">
-      <a class="navbar-brand" href="/quiz/">Quiz</a>
+      <a class="navbar-brand" href="/quiz/[[COUNT]]">Quiz</a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
         aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
@@ -44,7 +48,7 @@
   </nav>
 
   <div class="container" id="app">
-    <div class="row main justify-content-center">
+    <div class="row main justify-content-center" v-if="!quizdone || (quizdone && results.length==0)">
       <div class="row justify-content-center align-items-center">
         <div class="col-md-6 col-lg-4">
           <div class="card" v-cloak v-if="loading">
@@ -70,34 +74,40 @@
                   {{choice}}
                 </label>
               </div>
+              <br />
+              <button type="button" class="btn btn-warning float-start" v-on:click="back"
+                v-if="questionID>0">Back</button>
               <button type="button" class="btn btn-success float-end" v-on:click="next">{{next_button}}</button>
             </div>
           </div>
-          <div class="alert alert-success" role="alert" v-cloak v-if="!loading && !hasFailed && quizdone && results.length==0">
+          <div class="alert alert-success" role="alert" v-cloak
+            v-if="!loading && !hasFailed && quizdone && results.length==0">
             Congratulations! You got all correct!
           </div>
-          <div v-cloak v-if="!loading && !hasFailed && quizdone && results.length>0">
-            <h5 class="text-center">{{score}}</h5>
-            <br />
-            <p>Words to review:</p>
-            <table class="table">
-              <thead>
-                <tr>
-                  <th scope="col">Word</th>
-                  <th scope="col">Meaning</th>
-                  <th scope="col">You Picked</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="result in results">
-                  <td>{{result.Word}}</td>
-                  <td>{{result.Meaning}}</td>
-                  <td>{{result.Chosen}}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
         </div>
+      </div>
+    </div>
+    <div class="row mistakes justify-content-center" v-cloak v-if="quizdone && results.length!=0">
+      <div>
+        <h5 class="text-center">{{score}}</h5>
+        <br />
+        <p>Words to review:</p>
+        <table class="table">
+          <thead>
+            <tr>
+              <th scope="col">Word</th>
+              <th scope="col">Meaning</th>
+              <th scope="col">You Picked</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="result in results">
+              <td>{{result.Word}}</td>
+              <td>{{result.Meaning}}</td>
+              <td>{{result.Chosen}}</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
   </div>
@@ -124,47 +134,79 @@
         results: [],
       },
       computed: {
-        "page":function(event){
-          return this.questionID+1 + " of " + this.quiz.Questions.length;
+        "page": function (event) {
+          return this.questionID + 1 + " of " + this.quiz.Questions.length;
         },
-        "score": function(event){
+        "score": function (event) {
           return "Score: " + (this.quiz.Questions.length - this.results.length) + " / " + this.quiz.Questions.length;
         },
       },
       methods: {
         "next": function (event) {
-          if (this.choice_picked=="") {
+          if (this.choice_picked == "") {
             alert("please pick a choice first");
             return
           }
-          this.answers.Answers.push({Word: this.question.Word, Answer: this.choice_picked});
+          if (this.questionID + 1 > this.answers.Answers.length) {
+            this.answers.Answers.push({ Word: this.question.Word, Answer: this.choice_picked });
+          } else {
+            this.answers.Answers[this.questionID].Answer = this.choice_picked;
+          }
+          if (this.questionID + 1 < this.answers.Answers.length) {
+            this.choice_picked = this.answers.Answers[this.questionID + 1].Answer;
+          } else {
+            this.choice_picked = "";
+          }
           this.questionID++;
-          if (this.questionID==this.quiz.Questions.length) {
-            this.loading=true;
-            $.post("/quiz-api/save/",JSON.stringify(this.answers))
+          if (this.questionID == this.quiz.Questions.length) {
+            this.loading = true;
+            $.post("/quiz-api/save/", JSON.stringify(this.answers))
               .done(function (data) {
                 app.results = JSON.parse(data);
-                app.loading=false;
-                app.quizdone=true;
+                app.loading = false;
+                app.quizdone = true;
               })
               .fail(function (xhr, status, error) {
-                app.loading=false;
+                app.loading = false;
                 app.hasFailed = true;
                 app.errorMsg = xhr.responseText;
               });
             return
           }
-          if (this.questionID==this.quiz.Questions.length-1) {
+          if (this.questionID == this.quiz.Questions.length - 1) {
             this.next_button = "Done";
+          } else {
+            this.next_button = "Next";
           }
           this.question = app.quiz.Questions[this.questionID];
-          this.choice_picked="";
+          event.preventDefault();
+        },
+        "back": function (event) {
+          if (this.questionID == 0) {
+            alert("cannot go back");
+            return
+          }
+          if (this.choice_picked != "") {
+            if (this.questionID + 1 > this.answers.Answers.length) {
+              this.answers.Answers.push({ Word: this.question.Word, Answer: this.choice_picked });
+            } else {
+              this.answers.Answers[this.questionID].Answer = this.choice_picked;
+            }
+          }
+          this.questionID--;
+          if (this.questionID == this.quiz.Questions.length - 1) {
+            this.next_button = "Done";
+          } else {
+            this.next_button = "Next";
+          }
+          this.question = app.quiz.Questions[this.questionID];
+          this.choice_picked = this.answers.Answers[this.questionID].Answer;
           event.preventDefault();
         },
       },
     });
     var loadQuiz = function () {
-      $.get("/quiz-api/new/", {})
+      $.get("/quiz-api/new/[[COUNT]]", {})
         .done(function (data) {
           app.quiz = JSON.parse(data);
           app.loading = false;
