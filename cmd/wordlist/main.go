@@ -28,6 +28,7 @@ func main() {
 	}
 
 	setupHome(ws)
+	setupPingForKeepAlive(ws)
 	wordlist.SetupWordlist(ws)
 	wordlist.SetupQuiz(ws)
 	wordlist.SetupScores(ws)
@@ -47,5 +48,13 @@ func setupHome(ws *website.Website) {
 	index.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
 		w.Write(data)
+	})
+}
+
+func setupPingForKeepAlive(ws *website.Website) {
+	ping := ws.Router().Path("/ping/").Subrouter()
+	ping.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/javascript")
+		w.Write([]byte("{}"))
 	})
 }

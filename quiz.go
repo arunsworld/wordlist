@@ -94,14 +94,14 @@ func SetupQuiz(ws *website.Website) {
 			http.Error(w, "error saving quiz results", http.StatusInternalServerError)
 			return
 		}
-		ia, err := processAnswers(ws.DB(), answers)
+		resp, err := processAnswers(ws.DB(), answers)
 		if err != nil {
 			log.Printf("error processing answers: %v", err)
 			http.Error(w, "error saving quiz results", http.StatusInternalServerError)
 			return
 		}
 		w.Header().Set("Content-Type", "application/javascript")
-		if err := json.NewEncoder(w).Encode(ia); err != nil {
+		if err := json.NewEncoder(w).Encode(resp); err != nil {
 			log.Printf("error saving quiz answers: %v", err)
 			http.Error(w, "error saving quiz results", http.StatusInternalServerError)
 			return
@@ -191,22 +191,23 @@ func (qs quizSession) newQuiz(count int, user *website.User) (Quiz, error) {
 	return quiz, nil
 }
 
-func processAnswers(db *gorm.DB, answers Answers) (IncorrectAnswers, error) {
+func processAnswers(db *gorm.DB, answers Answers) (QuizSaveResponse, error) {
 	ongoingQuiz := &OngoingQuiz{}
 	result := db.Preload("OngoingQuizQuestions").First(&ongoingQuiz, "session = ?", answers.Session)
 	if result.Error != nil {
-		return IncorrectAnswers{}, result.Error
+		return QuizSaveResponse{}, result.Error
 	}
 	ongoingQuizWords := map[string]OngoingQuizQuestion{}
 	for _, question := range ongoingQuiz.OngoingQuizQuestions {
 		ongoingQuizWords[question.Word] = question
 	}
+	allWords := []Answer{}
 	ia := IncorrectAnswers{}
 	iws := []IncorrectWord{}
 	for _, answer := range answers.Answers {
 		oqq, ok := ongoingQuizWords[answer.Word]
 		if !ok {
-			return ia, fmt.Errorf("%s was not found in the session but reported in answers", answer.Word)
+			return QuizSaveResponse{}, fmt.Errorf("%s was not found in the session but reported in answers", answer.Word)
 		}
 		if answer.Answer != oqq.Meaning {
 			ia = append(ia, IncorrectAnswer{
@@ -219,6 +220,10 @@ func processAnswers(db *gorm.DB, answers Answers) (IncorrectAnswers, error) {
 				WordID:  oqq.WordID,
 			})
 		}
+		allWords = append(allWords, Answer{
+			Word:   answer.Word,
+			Answer: oqq.Meaning,
+		})
 	}
 	completedQuiz := &CompletedQuiz{
 		Session:            ongoingQuiz.Session,
@@ -245,7 +250,8 @@ func processAnswers(db *gorm.DB, answers Answers) (IncorrectAnswers, error) {
 	if result.Error != nil {
 		log.Printf("WARNING: unable to delete ongoing quiz: %v", result.Error)
 	}
-	return ia, nil
+	duration := time.Since(ongoingQuiz.CreatedAt).Round(time.Second).String()
+	return QuizSaveResponse{IncorrectAnswers: ia, AllWords: allWords, Time: duration}, nil
 }
 
 type OngoingQuiz struct {
@@ -297,6 +303,12 @@ type Answers struct {
 type Answer struct {
 	Word   string
 	Answer string
+}
+
+type QuizSaveResponse struct {
+	IncorrectAnswers IncorrectAnswers
+	AllWords         []Answer
+	Time             string // humanized time
 }
 
 type IncorrectAnswers []IncorrectAnswer

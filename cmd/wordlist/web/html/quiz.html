@@ -48,7 +48,7 @@
   </nav>
 
   <div class="container" id="app">
-    <div class="row main justify-content-center" v-if="!quizdone || (quizdone && results.length==0)">
+    <div class="row main justify-content-center" v-if="!quizdone">
       <div class="row justify-content-center align-items-center">
         <div class="col-md-6 col-lg-4">
           <div class="card" v-cloak v-if="loading">
@@ -74,24 +74,54 @@
                   {{choice}}
                 </label>
               </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" v-model="choice_picked" v-bind:value=" '' ">
+                <label class="form-check-label">I don't know</label>
+              </div>
               <br />
               <button type="button" class="btn btn-warning float-start" v-on:click="back"
                 v-if="questionID>0">Back</button>
               <button type="button" class="btn btn-success float-end" v-on:click="next">{{next_button}}</button>
             </div>
           </div>
-          <div class="alert alert-success" role="alert" v-cloak
+          <!-- <div class="alert alert-success" role="alert" v-cloak
             v-if="!loading && !hasFailed && quizdone && results.length==0">
-            Congratulations! You got all correct!
-          </div>
+            Congratulations! You got all correct in {{quizTime}}.
+          </div> -->
+        </div>
+      </div>
+    </div>
+    <div class="row mistakes justify-content-center" v-cloak v-if="quizdone && results.length==0">
+      <div class="row justify-content-center">
+        <div class="alert alert-success col-md-6" role="alert">
+          Congratulations! You got all correct in {{quizTime}}.
+        </div>
+      </div>
+      <div class="row justify-content-center">
+        <div class="col-md-6">
+          <h5>All Words</h5>
+          <table class="table">
+            <thead>
+              <tr>
+                <th scope="col">Word</th>
+                <th scope="col">Meaning</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="word in allWords">
+                <td>{{word.Word}}</td>
+                <td>{{word.Answer}}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
     <div class="row mistakes justify-content-center" v-cloak v-if="quizdone && results.length!=0">
       <div>
-        <h5 class="text-center">{{score}}</h5>
+        <h5 class="text-center">{{score}}. Time: {{quizTime}}</h5>
         <br />
-        <p>Words to review:</p>
+        <p>Words you got wrong:</p>
         <table class="table">
           <thead>
             <tr>
@@ -108,9 +138,24 @@
             </tr>
           </tbody>
         </table>
+        <br />
+        <h5>All Words</h5>
+        <table class="table">
+          <thead>
+            <tr>
+              <th scope="col">Word</th>
+              <th scope="col">Meaning</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="word in allWords">
+              <td>{{word.Word}}</td>
+              <td>{{word.Answer}}</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
-  </div>
   </div>
 
   <script src="/static/bootstrap.bundle.min.js"></script>
@@ -132,6 +177,8 @@
         answers: {},
         quizdone: false,
         results: [],
+        quizTime: "",
+        allWords: [],
       },
       computed: {
         "page": function (event) {
@@ -143,10 +190,6 @@
       },
       methods: {
         "next": function (event) {
-          if (this.choice_picked == "") {
-            alert("please pick a choice first");
-            return
-          }
           if (this.questionID + 1 > this.answers.Answers.length) {
             this.answers.Answers.push({ Word: this.question.Word, Answer: this.choice_picked });
           } else {
@@ -162,7 +205,11 @@
             this.loading = true;
             $.post("/quiz-api/save/", JSON.stringify(this.answers))
               .done(function (data) {
-                app.results = JSON.parse(data);
+                console.log(data);
+                res = JSON.parse(data);
+                app.results = res.IncorrectAnswers;
+                app.allWords = res.AllWords;
+                app.quizTime = res.Time;
                 app.loading = false;
                 app.quizdone = true;
               })
@@ -224,6 +271,15 @@
     }
     $(function () {
       loadQuiz();
+      setInterval(function(){
+        $.get("/ping/", {})
+          .done(function (data) {
+            // console.log("ping successful");
+          })
+          .fail(function (xhr, status, error) {
+            console.log("ping failed:"+xhr.responseText)
+          });
+      }, 30000);
     });
   </script>
 
